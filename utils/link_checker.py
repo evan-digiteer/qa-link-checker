@@ -3,6 +3,7 @@ import requests
 import base64
 from datetime import datetime
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import WebDriverException
 from config.config import Config
 
 class LinkChecker:
@@ -21,7 +22,23 @@ class LinkChecker:
             return f.read()
 
     def get_all_links(self):
-        return self.driver.find_elements(By.TAG_NAME, "a")
+        """Get all links and their details before processing."""
+        links = []
+        elements = self.driver.find_elements(By.TAG_NAME, "a")
+        
+        for element in elements:
+            try:
+                href = element.get_attribute('href')
+                text = element.text
+                if href and not href.startswith('javascript:') and not href.startswith('#'):
+                    links.append({
+                        'url': href,
+                        'text': text
+                    })
+            except:
+                continue
+        
+        return links
 
     def check_link(self, link):
         try:
@@ -34,10 +51,18 @@ class LinkChecker:
         except:
             return False
 
-    def capture_screenshot(self, link):
-        # Get screenshot as base64
-        screenshot = self.driver.get_screenshot_as_base64()
-        return f"data:image/png;base64,{screenshot}"
+    def capture_screenshot(self, url):
+        current_url = self.driver.current_url
+        try:
+            self.driver.get(url)
+            screenshot = self.driver.get_screenshot_as_base64()
+            return f"data:image/png;base64,{screenshot}"
+        except WebDriverException as e:
+            print(f"\nError capturing screenshot for {url}: {str(e)}")
+            return ""
+        finally:
+            # Return to the original page
+            self.driver.get(current_url)
 
     def generate_report(self):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -57,13 +82,15 @@ class LinkChecker:
                 </div>
             """
 
-        # Generate passed links HTML
+        # Generate passed links HTML with screenshots
         passed_results = "<ul>"
         for link in self.passed_links:
             passed_results += f"""
-                <li>
+                <li class="link-card">
                     <p><strong>URL:</strong> <a href="{link['url']}" target="_blank" class="success">{link['url']}</a></p>
                     <p><strong>Link Text:</strong> {link['text']}</p>
+                    <h4>Screenshot:</h4>
+                    <img src="{link['screenshot']}" class="screenshot" alt="Success Screenshot">
                 </li>
             """
         passed_results += "</ul>"
@@ -92,26 +119,36 @@ class LinkChecker:
         links = self.get_all_links()
         self.total_links = len(links)
         
-        for link in links:
-            self.current_link += 1
+        for idx, link in enumerate(links):
+            self.current_link = idx + 1
             percentage = (self.current_link / self.total_links) * 100
             print(f"\rProgress: {percentage:.1f}% ({self.current_link}/{self.total_links})", end="")
             
-            href = link.get_attribute('href')
-            text = link.text
+            # Check if link is broken using requests
+            try:
+                response = requests.head(link['url'], allow_redirects=True, timeout=Config.TIMEOUT)
+                is_working = response.status_code < 400
+            except:
+                is_working = False
             
-            if not self.check_link(link):
+            # Capture screenshot by visiting the URL
+            screenshot = self.capture_screenshot(link['url'])
+            
+            if not is_working:
                 self.broken_links.append({
-                    'url': href,
-                    'text': text,
-                    'screenshot': self.capture_screenshot(link)
+                    'url': link['url'],
+                    'text': link['text'],
+                    'screenshot': screenshot
                 })
             else:
-                # Track passed links
                 self.passed_links.append({
-                    'url': href,
-                    'text': text
+                    'url': link['url'],
+                    'text': link['text'],
+                    'screenshot': screenshot
                 })
+            
+            # Return to homepage
+            self.driver.get(Config.BASE_URL)
         
         print("\nLink checking completed!")
         return self.broken_links

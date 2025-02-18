@@ -26,12 +26,20 @@
         .passed-links ul {{ 
             list-style: none; 
             padding: 0;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
         }}
         .passed-links li {{ 
-            padding: 10px;
-            border-bottom: 1px solid #eee;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 5px;
         }}
-        .passed-links li:last-child {{ border-bottom: none; }}
+        .passed-links .screenshot {{
+            max-width: 100%;
+            height: auto;
+            margin-top: 10px;
+        }}
         .stats {{
             display: flex;
             justify-content: space-around;
