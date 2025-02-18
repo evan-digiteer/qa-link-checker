@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Broken Links Report</title>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 20px; }}
+        .link-card {{ border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 5px; }}
+        .screenshot {{ max-width: 800px; margin: 10px 0; border: 1px solid #ccc; }}
+        .error {{ color: #dc3545; }}
+        .timestamp {{ color: #666; }}
+        .success {{ color: #28a745; }}
+        .summary {{ margin-bottom: 30px; background: #f8f9fa; padding: 20px; border-radius: 5px; }}
+        details {{ 
+            margin: 10px 0; 
+            padding: 10px; 
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }}
+        summary {{ 
+            cursor: pointer; 
+            padding: 10px;
+            font-weight: bold;
+        }}
+        summary:hover {{ background: #f8f9fa; }}
+        .passed-links ul {{ 
+            list-style: none; 
+            padding: 0;
+        }}
+        .passed-links li {{ 
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }}
+        .passed-links li:last-child {{ border-bottom: none; }}
+        .stats {{
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }}
+        .stat-item {{
+            text-align: center;
+            padding: 10px;
+        }}
+    </style>
+</head>
+<body>
+    <h1>Broken Links Report</h1>
+    <p class="timestamp">Generated on: {timestamp}</p>
+    <p>Website checked: {base_url}</p>
+    
+    <div class="summary">
+        <h2>Summary</h2>
+        <div class="stats">
+            <div class="stat-item">
+                <h3>Total Links</h3>
+                <p>{total_links}</p>
+            </div>
+            <div class="stat-item">
+                <h3>Passed</h3>
+                <p class="success">{total_passed}</p>
+            </div>
+            <div class="stat-item">
+                <h3>Broken</h3>
+                <p class="error">{total_broken}</p>
+            </div>
+        </div>
+    </div>
+
+    <details {broken_open}>
+        <summary>Broken Links ({total_broken})</summary>
+        <div class="results">
+            {link_results}
+        </div>
+    </details>
+
+    <details>
+        <summary>Passed Links ({total_passed})</summary>
+        <div class="passed-links">
+            {passed_results}
+        </div>
+    </details>
+</body>
+</html>
