@@ -2,11 +2,21 @@ import os
 import requests
 import base64
 from datetime import datetime
+from urllib.parse import urlparse
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import WebDriverException
 from config.config import Config
 
 class LinkChecker:
+    # Special domains that need different handling
+    SPECIAL_DOMAINS = {
+        'twitter.com': 'GET',
+        'x.com': 'GET',
+        'facebook.com': 'GET',
+        'instagram.com': 'GET',
+        'linkedin.com': 'GET'
+    }
+
     def __init__(self, driver):
         self.driver = driver
         self.broken_links = []
@@ -40,15 +50,27 @@ class LinkChecker:
         
         return links
 
-    def check_link(self, link):
+    def check_link(self, url):
+        """Check if a link is valid with special handling for certain domains."""
         try:
-            href = link.get_attribute('href')
-            if not href or href.startswith('javascript:') or href.startswith('#'):
+            if not url or url.startswith('javascript:') or url.startswith('#'):
                 return True
 
-            response = requests.head(href, allow_redirects=True, timeout=Config.TIMEOUT)
-            return response.status_code < 400
-        except:
+            domain = urlparse(url).netloc
+            method = 'GET' if any(d in domain for d in self.SPECIAL_DOMAINS) else 'HEAD'
+            
+            if method == 'HEAD':
+                response = requests.head(url, allow_redirects=True, timeout=Config.TIMEOUT)
+            else:
+                response = requests.get(url, timeout=Config.TIMEOUT)
+            
+            is_success = response.status_code < 400
+            if not is_success:
+                print(f"\nWarning: {url} returned status code {response.status_code}")
+            
+            return is_success
+        except Exception as e:
+            print(f"\nError checking {url}: {str(e)}")
             return False
 
     def capture_screenshot(self, url):
@@ -124,12 +146,8 @@ class LinkChecker:
             percentage = (self.current_link / self.total_links) * 100
             print(f"\rProgress: {percentage:.1f}% ({self.current_link}/{self.total_links})", end="")
             
-            # Check if link is broken using requests
-            try:
-                response = requests.head(link['url'], allow_redirects=True, timeout=Config.TIMEOUT)
-                is_working = response.status_code < 400
-            except:
-                is_working = False
+            # Check if link is broken
+            is_working = self.check_link(link['url'])
             
             # Capture screenshot by visiting the URL
             screenshot = self.capture_screenshot(link['url'])
