@@ -17,12 +17,13 @@ def main():
             for link in broken_links:
                 print(f"\nURL: {link['url']}")
                 print(f"Text: {link['text']}")
-            
-            report_path = checker.generate_report()
-            print(f"\nDetailed report generated: {report_path}")
-            webbrowser.open(f"file://{os.path.abspath(report_path)}")
         else:
             print("\nNo broken links found! ✓")
+        
+        # Always generate and open the report
+        report_path = checker.generate_report()
+        print(f"\nDetailed report generated: {report_path}")
+        webbrowser.open(f"file://{os.path.abspath(report_path)}")
             
     finally:
         driver.quit()
