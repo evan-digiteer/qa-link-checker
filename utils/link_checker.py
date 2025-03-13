@@ -109,7 +109,8 @@ class LinkChecker:
 
     def check_link(self, url, max_retries=2):
         """Enhanced link checking with retries and better validation."""
-        if not url or url.startswith('javascript:') or url.startswith('#'):
+        if not url or url.startswith('javascript:') or url.startswith('#') or \
+           url.startswith('tel:') or url.startswith('mailto:'):
             return True
 
         domain = urlparse(url).netloc
